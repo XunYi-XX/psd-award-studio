@@ -20,6 +20,19 @@
    app.displayDialogs=DialogModes.NO;app.preferences.rulerUnits=Units.PIXELS;
    for(var i=0;i<jobs.length;i++){
      var j=jobs[i];work=app.open(new File(j.file));
+     if(j.background){
+       var anchor=null;
+       for(var k=0;k<work.layers.length;k++){
+         var existing=work.layers[k];
+         if(existing.typename!='ArtLayer'||existing.kind!=LayerKind.TEXT){anchor=existing;break;}
+       }
+       if(!anchor)throw Error("模板缺少背景层");
+       var photo=app.open(new File(j.background)),layer;
+       try{layer=photo.activeLayer.duplicate(work,ElementPlacement.PLACEATBEGINNING);}
+       finally{photo.close(SaveOptions.DONOTSAVECHANGES);}
+       app.activeDocument=work;layer.move(anchor,ElementPlacement.PLACEBEFORE);layer.name='自定义背景';
+       var pos=bounds(layer);layer.translate(UnitValue(-pos[0],'px'),UnitValue(-pos[1],'px'));
+     }
      var group=find(work,function(l){return l.name=='组别';}),mem=find(work,function(l){return l.name=='小组成员';});
      var body=find(work,function(l){return l.textItem.contents.indexOf('作品《')>=0;});
      var prize=find(work,function(l){return l.textItem.contents.indexOf('被评为')==0;});

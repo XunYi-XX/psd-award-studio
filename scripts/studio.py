@@ -4,7 +4,7 @@ from collections import defaultdict
 from openpyxl import load_workbook
 from pypinyin import lazy_pinyin
 from reportlab.pdfgen.canvas import Canvas
-from PIL import Image
+from PIL import Image, ImageOps
 
 ROOT=Path(getattr(sys,'_MEIPASS',Path(__file__).resolve().parents[1]))
 APP=Path(sys.executable).parent if getattr(sys,'frozen',False) else ROOT.parent
@@ -117,18 +117,27 @@ def default_ps():
     paths=sorted((Path(os.environ.get('ProgramFiles','C:/Program Files'))/'Adobe').glob('Adobe Photoshop */Photoshop.exe'),reverse=True)
     return str(paths[0]) if paths else ''
 
-def export(jobs,template,ps,destination):
+def export(jobs,template,ps,destination,background=None):
     if not Path(ps).is_file() or Path(ps).name.lower()!='photoshop.exe':raise ValueError('请选择已安装的 Photoshop.exe')
     if not Path(template).is_file():raise ValueError('模板文件不存在')
     out=Path(destination)/datetime.datetime.now().strftime('奖状_%Y%m%d_%H%M%S_%f')
     out.mkdir(parents=True)
     with tempfile.TemporaryDirectory(prefix='award-studio-') as temp:
         tmp=Path(temp);pages=defaultdict(list);items=[]
+        backdrop=''
+        if background:
+            with Image.open(template) as base, Image.open(background) as src:
+                image=ImageOps.exif_transpose(src).convert('RGBA')
+                image=ImageOps.fit(image,base.size,method=Image.Resampling.LANCZOS)
+                paper=Image.new('RGB',base.size,'white')
+                paper.paste(image,mask=image.getchannel('A'))
+                backdrop=(tmp/'background.png').as_posix()
+                paper.save(backdrop)
         for i,j in enumerate(jobs,1):
             folder=out/f"第{j['n']}组";folder.mkdir(exist_ok=True)
             safe=re.sub(r'[<>:"/\\|?*\x00-\x1f]','_',j['award'])[:60]
             p=folder/f'{i:03}_{safe}.psd';shutil.copyfile(template,p)
-            jpg=tmp/f'{i}.jpg';items.append(dict(j,file=p.as_posix(),jpg=jpg.as_posix()));pages[j['n']].append(jpg)
+            jpg=tmp/f'{i}.jpg';items.append(dict(j,background=backdrop,file=p.as_posix(),jpg=jpg.as_posix()));pages[j['n']].append(jpg)
         done=tmp/'result.txt';jsx=tmp/'render.jsx'
         engine=(ROOT/'scripts/render.jsx').read_text(encoding='utf-8-sig')
         jsx.write_text('#target photoshop\nvar jobs='+json.dumps(items,ensure_ascii=True)+';var done='+json.dumps(done.as_posix())+';\n'+engine.split('\n',1)[1],encoding='utf-8-sig')
@@ -151,78 +160,12 @@ def text_rows(groups,mapping):
     return '\n'.join(f"{n} | {title} | {'、'.join(names)} | {'、'.join(mapping.get(n,[]))}" for n,(title,names) in sorted(groups.items()))
 
 def gui():
-    import tkinter as tk
-    from tkinter import ttk,filedialog as fd,messagebox as mb
-    import threading,queue
-    win=tk.Tk();win.title('分组奖状制作工具');win.geometry('1050x640')
-    frame=ttk.Frame(win,padding=16);frame.pack(fill='both',expand=True)
-    date=tk.StringVar(value=f'{datetime.date.today().year}年{datetime.date.today().month}月')
-    ps=tk.StringVar(value=default_ps());template=tk.StringVar(value=str(ASSET));status=tk.StringVar(value='导入 Excel 或直接填写下方名单')
-    def picker(var,ext):
-        path=fd.askopenfilename(filetypes=[(ext,'*.'+ext)])
-        if path:var.set(path)
-    for label,var,ext in [('Photoshop',ps,'exe'),('PSD 模板',template,'psd'),('落款日期',date,None)]:
-        row=ttk.Frame(frame);row.pack(fill='x',pady=2);ttk.Label(row,text=label,width=12).pack(side='left');ttk.Entry(row,textvariable=var).pack(side='left',fill='x',expand=True)
-        if ext:ttk.Button(row,text='选择…',command=lambda v=var,e=ext:picker(v,e)).pack(side='left')
-    bar=ttk.Frame(frame);bar.pack(fill='x',pady=10)
-    ttk.Label(frame,text='每行一组，可直接修改。格式：组号 | 作品名 | 组员（顿号分隔） | 奖项（顿号分隔）。奖项留空则跳过该组。').pack(anchor='w')
-    from tkinter.scrolledtext import ScrolledText
-    edit=ScrolledText(frame,wrap='none',font=('Microsoft YaHei UI',11),undo=True);edit.pack(fill='both',expand=True)
-    def read_editor():
-        groups={};aw={}
-        for line in edit.get('1.0','end').splitlines():
-            if not line.strip():continue
-            num,title,names,prizes=[x.strip() for x in line.split('|')]
-            n=group(num)
-            if not n or n in groups:raise ValueError('请检查组号：'+num)
-            groups[n]=[title,parts(names)];aw[n]=parts(prizes)
-        return groups,aw
-    def put(groups,aw):
-        edit.delete('1.0','end');edit.insert('1.0',text_rows(groups,aw))
-        status.set(f'已载入 {len(groups)} 组，合计 {sum(map(len,aw.values()))} 张奖状')
-    def load(mode,path=None):
-        try:
-            if not path:path=fd.askopenfilename(filetypes=[('名单或获奖表','*.xlsx *.csv')])
-            if not path:return
-            tables=sheets(path);groups,aw=read_editor()
-            if mode=='roster':
-                groups=roster(tables,{n:t for n,(t,_) in groups.items()})
-                aw=awards(tables,groups)
-            else:
-                aw=awards(tables,groups)
-                if not aw:raise ValueError('未识别到奖项，请使用“奖项 | 组别”或“奖项 | 作品1 | 作品2”')
-            put(groups,aw)
-        except Exception as e:mb.showerror('导入失败',str(e))
-    ttk.Button(bar,text='导入分组名单 / 完整工作簿',command=lambda:load('roster')).pack(side='left')
-    ttk.Button(bar,text='导入获奖表',command=lambda:load('awards')).pack(side='left',padx=8)
-    preset=APP/'本届名单与奖项.xlsx'
-    if preset.is_file():ttk.Button(bar,text='载入本届名单与奖项',command=lambda:load('roster',preset)).pack(side='left')
-    events=queue.Queue()
-    def start():
-        try:
-            jobs=plan(edit.get('1.0','end'),date.get().strip());args=(jobs,template.get(),ps.get());dest=fd.askdirectory(title='选择导出位置')
-            if not dest:return
-            go.state(['disabled']);status.set(f'Photoshop 正在制作 {len(jobs)} 张奖状…')
-            def work():
-                try:events.put((True,str(export(*args,dest))))
-                except Exception as e:events.put((False,str(e)))
-            threading.Thread(target=work,daemon=True).start()
-        except Exception as e:mb.showerror('请检查输入',str(e))
-    def poll():
-        if not events.empty():
-            ok,msg=events.get();go.state(['!disabled']);status.set(msg)
-            if ok:mb.showinfo('导出完成',msg);os.startfile(msg)
-            else:mb.showerror('导出失败',msg)
-        win.after(250,poll)
-    go=ttk.Button(bar,text='导出 PSD 和分组 PDF',command=start);go.pack(side='right')
-    ttk.Label(frame,textvariable=status).pack(anchor='w',pady=5)
-    win.protocol('WM_DELETE_WINDOW',lambda:None if go.instate(['disabled']) else win.destroy())
-    if preset.is_file():load('roster',preset)
-    poll();win.mainloop()
+    from workspace_ui import launch
+    launch(sys.modules[__name__])
 
 if __name__=='__main__':
     if len(sys.argv)==1:gui()
     else:
-        a=argparse.ArgumentParser();a.add_argument('--workbook',required=True);a.add_argument('--awards');a.add_argument('--date',required=True);a.add_argument('--photoshop',default=default_ps());a.add_argument('--template',default=str(ASSET));a.add_argument('--output',required=True);args=a.parse_args()
+        a=argparse.ArgumentParser();a.add_argument('--workbook',required=True);a.add_argument('--awards');a.add_argument('--date',required=True);a.add_argument('--photoshop',default=default_ps());a.add_argument('--template',default=str(ASSET));a.add_argument('--output',required=True);a.add_argument('--background');args=a.parse_args()
         data=sheets(args.workbook);gs=roster(data);aw=awards(sheets(args.awards) if args.awards else data,gs)
-        export(plan(text_rows(gs,aw),args.date),args.template,args.photoshop,args.output)
+        export(plan(text_rows(gs,aw),args.date),args.template,args.photoshop,args.output,args.background)

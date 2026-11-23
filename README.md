@@ -21,6 +21,12 @@ Install the Skill by copying this repository to ~/.codex/skills/psd-award-studio
 
 ## Version history / 版本记录
 
+### 1.1.0
+映印工作台：双击表格编辑分组，右侧可切换奖项、查看布局示意并设置日期；Photoshop 路径和自定义 PSD 在“导出设置”中。
+New desktop workspace with a group editor, live layout preview and export settings.
+模板已内置。可导入独立背景图片，按画布比例居中裁切铺满，透明区域衬白，导出为独立图层。
+Bundled PSD with optional center-cropped image backgrounds. CLI: --background path/to/image.png.
+
 ### 1.0.0
 首次发布：名单与奖项识别、可编辑核对、日期设置、PSD 副本与分组 PDF。
 Initial release: roster and award matching, editable review, configurable dates, PSD copies and group PDFs.
