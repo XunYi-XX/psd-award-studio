@@ -2,11 +2,11 @@
 const presets={
  heading:['证书标题','荣誉证书',50,12.7,67.3,84,'center'],
  group:['组别称呼','{组别}：',10.1,27.8,27.8,82,'left'],
- body:['活动正文','        在南京工业大学融媒体中心电视台组织的“2026新生\n微视频创作大赛”中，表现优异，作品《{作品名}》',10.1,35.2,22.2,82,'left'],
+ body:['活动正文','        在【主办单位】举办的“【活动名称】”中表现优异，\n作品《{作品名}》',10.1,35.2,22.2,82,'left'],
  award:['奖项文字','被评为“{奖项}”',50,53.2,48,84,'center'],
  members:['组员名单','小组成员： {组员}',12.9,67.4,20,79,'left'],
  note:['名单排序说明','（按照姓氏首字母排序）',17.4,72.1,9,22,'center'],
- signature:['发证单位与日期','南京工业大学融媒体中心电视台\n{日期}',74.2,80.5,14,44,'center']
+ signature:['发证单位与日期','【发证单位】\n{日期}',74.2,80.5,14,44,'center']
 };
 let layoutPlan={version:1,layers:{}},activeBlock='heading',drag=null;
 const blockKeys=()=>[...new Set([...Object.keys(presets),...Object.keys(layoutPlan.layers)])];

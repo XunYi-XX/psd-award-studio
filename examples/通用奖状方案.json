@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "layers": {
+    "heading": {
+      "text": "荣誉证书",
+      "x": 50,
+      "y": 12.7,
+      "pt": 67.3,
+      "width": 84,
+      "align": "center",
+      "visible": true
+    },
+    "group": {
+      "text": "{组别}：",
+      "x": 10.1,
+      "y": 27.8,
+      "pt": 27.8,
+      "width": 82,
+      "align": "left",
+      "visible": true
+    },
+    "body": {
+      "text": "        在【主办单位】举办的“【活动名称】”中表现优异，\n作品《{作品名}》",
+      "x": 10.1,
+      "y": 35.2,
+      "pt": 22.2,
+      "width": 82,
+      "align": "left",
+      "visible": true
+    },
+    "award": {
+      "text": "被评为“{奖项}”",
+      "x": 50,
+      "y": 53.2,
+      "pt": 48,
+      "width": 84,
+      "align": "center",
+      "visible": true
+    },
+    "members": {
+      "text": "小组成员： {组员}",
+      "x": 12.9,
+      "y": 67.4,
+      "pt": 20,
+      "width": 79,
+      "align": "left",
+      "visible": true
+    },
+    "note": {
+      "text": "（按照姓氏首字母排序）",
+      "x": 17.4,
+      "y": 72.1,
+      "pt": 9,
+      "width": 22,
+      "align": "center",
+      "visible": true
+    },
+    "signature": {
+      "text": "【发证单位】\n{日期}",
+      "x": 74.2,
+      "y": 80.5,
+      "pt": 14,
+      "width": 44,
+      "align": "center",
+      "visible": true
+    }
+  }
+}

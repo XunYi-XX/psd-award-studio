@@ -21,6 +21,11 @@ Install the Skill by copying this repository to ~/.codex/skills/psd-award-studio
 
 ## Version history / 版本记录
 
+### 1.3.1
+
+内置模板以【主办单位】、【活动名称】、【发证单位】作为占位符。用[通用奖状方案](examples/通用奖状方案.json)和[制作单](examples/方案制作单.md)准备新方案。
+The bundled PSD uses generic organizer, event and issuer placeholders. A reusable layout and production brief are included in examples/.
+
 ### 1.3.0
 预览与导出共享 Photoshop 排版和合成结果，拖动框取自 PSD 实际图层边界。无边框窗口，全部七个证书文字层可编辑。支持拖动排版、精确坐标、字号、对齐、显隐、新增文本和 JSON 布局方案。
 Photoshop-rendered previews and layer bounds; frameless window and full certificate text editor with drag placement, date and roster variables, custom text blocks and portable JSON layouts (--layout).
