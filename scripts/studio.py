@@ -117,7 +117,10 @@ def default_ps():
     paths=sorted((Path(os.environ.get('ProgramFiles','C:/Program Files'))/'Adobe').glob('Adobe Photoshop */Photoshop.exe'),reverse=True)
     return str(paths[0]) if paths else ''
 
-def export(jobs,template,ps,destination,background=None):
+def export(jobs,template,ps,destination,background=None,layout=None,*,preview=False):
+    if layout is not None:
+        from layout_spec import validate
+        validate(layout)
     if not Path(ps).is_file() or Path(ps).name.lower()!='photoshop.exe':raise ValueError('请选择已安装的 Photoshop.exe')
     if not Path(template).is_file():raise ValueError('模板文件不存在')
     out=Path(destination)/datetime.datetime.now().strftime('奖状_%Y%m%d_%H%M%S_%f')
@@ -137,7 +140,7 @@ def export(jobs,template,ps,destination,background=None):
             folder=out/f"第{j['n']}组";folder.mkdir(exist_ok=True)
             safe=re.sub(r'[<>:"/\\|?*\x00-\x1f]','_',j['award'])[:60]
             p=folder/f'{i:03}_{safe}.psd';shutil.copyfile(template,p)
-            jpg=tmp/f'{i}.jpg';items.append(dict(j,background=backdrop,file=p.as_posix(),jpg=jpg.as_posix()));pages[j['n']].append(jpg)
+            jpg=tmp/f'{i}.jpg';items.append(dict(j,map=(tmp/"layers.csv").as_posix() if preview else "",layout=layout,background=backdrop,file=p.as_posix(),jpg=jpg.as_posix()));pages[j['n']].append(jpg)
         done=tmp/'result.txt';jsx=tmp/'render.jsx'
         engine=(ROOT/'scripts/render.jsx').read_text(encoding='utf-8-sig')
         jsx.write_text('#target photoshop\nvar jobs='+json.dumps(items,ensure_ascii=True)+';var done='+json.dumps(done.as_posix())+';\n'+engine.split('\n',1)[1],encoding='utf-8-sig')
@@ -148,6 +151,17 @@ def export(jobs,template,ps,destination,background=None):
             time.sleep(.5)
         status=done.read_text(encoding='utf-8-sig')
         if status!='OK':raise RuntimeError(status+'；副本目录：'+str(out))
+        if preview:
+            import base64,io
+            lines=(tmp/'layers.csv').read_text(encoding='utf-8-sig').splitlines()
+            w,h=map(float,lines[0].split(','))
+            rects={}
+            for line in lines[1:]:
+                key,*coords=line.split(',');rects[key]=list(map(float,coords))
+            with Image.open(Path(items[0]['jpg'])) as image:
+                image.thumbnail((1500,1061),Image.Resampling.LANCZOS)
+                buf=io.BytesIO();image.save(buf,format='PNG')
+            return dict(width=w,height=h,rects=rects,url='data:image/png;base64,'+base64.b64encode(buf.getvalue()).decode())
         for n,images in pages.items():
             pdf=Canvas(str(out/f'第{n}组奖状.pdf'))
             for img in images:
@@ -166,6 +180,8 @@ def gui():
 if __name__=='__main__':
     if len(sys.argv)==1:gui()
     else:
-        a=argparse.ArgumentParser();a.add_argument('--workbook',required=True);a.add_argument('--awards');a.add_argument('--date',required=True);a.add_argument('--photoshop',default=default_ps());a.add_argument('--template',default=str(ASSET));a.add_argument('--output',required=True);a.add_argument('--background');args=a.parse_args()
+        a=argparse.ArgumentParser();a.add_argument('--workbook',required=True);a.add_argument('--awards');a.add_argument('--date',required=True);a.add_argument('--photoshop',default=default_ps());a.add_argument('--template',default=str(ASSET));a.add_argument('--output',required=True);a.add_argument('--background');a.add_argument('--layout',help='映印布局 JSON');args=a.parse_args()
         data=sheets(args.workbook);gs=roster(data);aw=awards(sheets(args.awards) if args.awards else data,gs)
-        export(plan(text_rows(gs,aw),args.date),args.template,args.photoshop,args.output,args.background)
+        from layout_spec import read
+        export(plan(text_rows(gs,aw),args.date),args.template,args.photoshop,args.output,args.background,read(args.layout) if args.layout else None)
+

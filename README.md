@@ -21,6 +21,14 @@ Install the Skill by copying this repository to ~/.codex/skills/psd-award-studio
 
 ## Version history / 版本记录
 
+### 1.3.0
+预览与导出共享 Photoshop 排版和合成结果，拖动框取自 PSD 实际图层边界。无边框窗口，全部七个证书文字层可编辑。支持拖动排版、精确坐标、字号、对齐、显隐、新增文本和 JSON 布局方案。
+Photoshop-rendered previews and layer bounds; frameless window and full certificate text editor with drag placement, date and roster variables, custom text blocks and portable JSON layouts (--layout).
+
+### 1.2.0
+本地 Qt WebEngine 工作台，内置 Three.js 空间背景、减少动态效果选项、搜索与表单反馈。新图标用于桌面程序、窗口和品牌标识。首次启动需解压内置界面引擎。
+Offline Qt WebEngine workspace with a bundled Three.js scene, reduced-motion support, accessible controls and a multi-size application icon. The renderer is bundled with the executable.
+
 ### 1.1.0
 映印工作台：双击表格编辑分组，右侧可切换奖项、查看布局示意并设置日期；Photoshop 路径和自定义 PSD 在“导出设置”中。
 New desktop workspace with a group editor, live layout preview and export settings.
@@ -30,3 +38,4 @@ Bundled PSD with optional center-cropped image backgrounds. CLI: --background pa
 ### 1.0.0
 首次发布：名单与奖项识别、可编辑核对、日期设置、PSD 副本与分组 PDF。
 Initial release: roster and award matching, editable review, configurable dates, PSD copies and group PDFs.
+
