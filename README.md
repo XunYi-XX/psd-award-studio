@@ -21,6 +21,11 @@ Install the Skill by copying this repository to ~/.codex/skills/psd-award-studio
 
 ## Version history / 版本记录
 
+### 1.3.2
+
+移动证书标题时，标题装饰线随之移动。导出的 PSD 保留 Photoshop 图层链接。
+The title ornament follows the heading in previews and exports. The editable PSD preserves their Photoshop layer link.
+
 ### 1.3.1
 
 内置模板以【主办单位】、【活动名称】、【发证单位】作为占位符。用[通用奖状方案](examples/通用奖状方案.json)和[制作单](examples/方案制作单.md)准备新方案。

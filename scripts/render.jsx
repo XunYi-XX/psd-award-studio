@@ -24,7 +24,7 @@
        var anchor=null;
        for(var k=0;k<work.layers.length;k++){
          var existing=work.layers[k];
-         if(existing.typename!='ArtLayer'||existing.kind!=LayerKind.TEXT){anchor=existing;break;}
+         if(existing.name!='标题装饰线' && (existing.typename!='ArtLayer'||existing.kind!=LayerKind.TEXT)){anchor=existing;break;}
        }
        if(!anchor)throw Error("模板缺少背景层");
        var photo=app.open(new File(j.background)),layer;
@@ -44,6 +44,27 @@
      mem.textItem.contents=j.members;underline(work,mem);fit(mem,2770);mem.name='小组成员';
      var known={group:group,body:body,award:prize,members:mem,signature:date};
      if(j.map||j.layout){known.heading=find(work,function(l){return l.name=='荣誉证书';});known.note=find(work,function(l){return l.name=='名单排序说明';});}
+     // Older bundled templates keep the title ornament inside the border group.
+     var title=null,rule=null;
+     try{title=work.artLayers.getByName('荣誉证书');}catch(noTitle){}
+     if(title){
+       try{rule=work.artLayers.getByName('标题装饰线');}catch(noRule){}
+       if(!rule){
+         try{
+           var ornaments=work.layerSets.getByName('背景').artLayers;
+           for(var oi=0;oi<ornaments.length;oi++){
+             if(ornaments[oi].id==115 && ornaments[oi].name=='矢量智能对象'){rule=ornaments[oi];break;}
+           }
+         }catch(noBorder){}
+       }
+     }
+     var originalTitle,originalRule;
+     if(rule){
+       var peers=rule.linkedLayers;
+       for(var li=0;li<peers.length;li++){if(peers[li].id==title.id){rule.unlink();break;}}
+       if(rule.parent.typename!='Document'){rule.move(title,ElementPlacement.PLACEAFTER);rule.name='标题装饰线';}
+       originalTitle=bounds(title);originalRule=bounds(rule);
+     }
      if(j.layout){
        var ls=j.layout.layers,W=work.width.as('px'),H=work.height.as('px');
 
@@ -66,6 +87,19 @@
          var bb=bounds(target),anchorX=cfg.align=='center'?(bb[0]+bb[2])/2:(cfg.align=='right'?bb[2]:bb[0]);
          target.translate(UnitValue(W*cfg.x/100-anchorX,'px'),UnitValue(H*cfg.y/100-bb[1],'px'));
        }
+     }
+     if(rule){
+       if(!title.visible){rule.visible=false;}
+       else if(j.layout && j.layout.layers.heading){
+         var tb=bounds(title),rb=bounds(rule);
+         // Preserve the original optical centering and gap below the lettering.
+         var dx=(tb[0]+tb[2]-originalTitle[0]-originalTitle[2])/2+originalRule[0]-rb[0];
+         var dy=tb[3]-originalTitle[3]+originalRule[1]-rb[1];
+         if(dx || dy){
+           rule.translate(UnitValue(dx,'px'),UnitValue(dy,'px'));
+         }
+       }
+       rule.link(title);
      }
      if(j.map){
        var lines=[];for(var id in known){if(known.hasOwnProperty(id)&&known[id].visible){var box=bounds(known[id]);lines.push(id+','+box.join(','));}}
